@@ -1,0 +1,77 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="loader.css">
+<style>
+    #loader { width: 10%;}
+    #roomForm , .loader { display: none; margin-top: 20px; }
+</style>
+
+<div class="form">
+    <div class="form-group">
+    <h2>Enter Tournament Title</h2>
+    <input type="text" id="gameTitle" placeholder="Game Title" class="int">
+    <button onclick="checkGameTitle()" class="btn">Check</button>
+    </div>
+    <div id="roomForm" class="form-group">
+        <h2>Enter Room Details</h2>
+        <input type="text" id="roomId" placeholder="Room ID: " class="int">
+        <input type="text" id="roomPassword" placeholder="Room Password: " class="int">
+        <button onclick="submitRoomDetails()" class="btn">Submit</button>
+    </div>
+
+    <div id="loader" class="loader"></div>
+</div>
+
+<script>
+    function checkGameTitle() {
+        let gameTitle = document.getElementById("gameTitle").value;
+        if (!gameTitle) {
+            alert("Please enter a game title.");
+            return;
+        }
+
+        $(".loader").show();
+
+        fetch("https://script.google.com/macros/s/AKfycbwlA9om0f4rVnI2_yd_qLtLoV-t_T8qjzBNmRX4pxlB2ZdlT9MXobMT5sPLoUJ55RAI/exec", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ action: "checkTitle", gameTitle })
+        })
+        .then(response => response.json())
+        .then(data => {
+            $(".loader").hide();
+            if (data.found) {
+                document.getElementById("roomForm").style.display = "flex";
+            } else {
+                alert("Game Title not found in Tournament sheet.");
+            }
+        });
+    }
+
+    function submitRoomDetails() {
+        let gameTitle = document.getElementById("gameTitle").value;
+        let roomId = document.getElementById("roomId").value;
+        let roomPassword = document.getElementById("roomPassword").value;
+
+        if (!gameTitle || !roomId || !roomPassword) {
+            alert("Please fill all fields.");
+            return;
+        }
+
+        $(".loader").show();
+
+        fetch("https://script.google.com/macros/s/AKfycbwlA9om0f4rVnI2_yd_qLtLoV-t_T8qjzBNmRX4pxlB2ZdlT9MXobMT5sPLoUJ55RAI/exec", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ action: "submitRoom", gameTitle, roomId, roomPassword })
+        })
+        .then(response => response.text())
+        .then(response => {
+            $(".loader").hide();
+            alert(response);
+            location.reload();
+        });
+    }
+</script>

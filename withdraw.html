@@ -1,0 +1,181 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Withdraw Requests</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="loader.css">
+<style>
+    #qrModal { display: none; }
+    .header { justify-content: center;}
+.withdraw-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.card {
+    background: var(--card-bg);
+    border: 2px solid var(--neon-purple);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(188, 19, 254, 0.2);
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 30px rgba(188, 19, 254, 0.4);
+}
+
+.card h3 {
+    color: var(--neon-purple);
+    margin: 0 0 15px 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.card p {
+    margin: 10px 0;
+    font-size: 1.1em;
+    color: #ffffff;
+}
+
+.btn {
+    background: transparent;
+    border: 2px solid;
+    border-radius: 5px;
+    padding: 8px 15px;
+    margin: 5px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-qr {
+    border-color: var(--neon-blue);
+    color: var(--neon-blue);
+}
+
+.btn-qr:hover {
+    background: var(--neon-blue);
+    color: var(--dark-bg);
+    box-shadow: 0 0 15px var(--neon-blue);
+}
+
+.btn-accept {
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.btn-accept:hover {
+    background: var(--success);
+    color: var(--dark-bg);
+    box-shadow: 0 0 15px var(--success);
+}
+
+.btn-reject {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.btn-reject:hover {
+    background: var(--danger);
+    color: var(--dark-bg);
+    box-shadow: 0 0 15px var(--danger);
+}
+
+#qrModal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #0c2933;
+    padding: 30px;
+    border: 2px solid var(--neon-blue);
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+    z-index: 1000;
+}
+
+#qrModal h3 {
+    color: var(--neon-blue);
+    text-align: center;
+    margin-top: 0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+#qrcode {
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+@keyframes glowBorder {
+    0% { border-color: var(--neon-purple); }
+    50% { border-color: var(--neon-blue); }
+    100% { border-color: var(--neon-purple); }
+}
+
+.card {
+    animation: glowBorder 3s infinite;
+}
+</style>
+<div class="header">
+<h2 style="text-align: center;">Withdraw Requests</h2>
+</div>
+<div class="withdraw-container" id="withdrawContainer"></div>
+
+<div id="qrModal">
+    <h3>Scan to Pay</h3>
+    <div id="qrcode"></div>
+    <button class="btn btn-qr" onclick="$('#qrModal').hide()">Close</button>
+</div>
+
+<script>
+    $(document).ready(function() {
+        fetch("https://script.google.com/macros/s/AKfycbyQ4x8K7LE0QAdp93u8BuVAq5MXWlp7y5TG2Sp-hT82Ba_nQmYupgMWaMqtWJQ6gQ/execgetData=true")
+            .then(response => response.json())
+            .then(data => {
+                let container = $("#withdrawContainer");
+                container.empty();
+                data.forEach(row => {
+                    if (!row.status) { 
+                        let card = $(`
+                            <div class="card">
+                                <h3>${row.username}</h3>
+                                <p><strong>UPI ID:</strong> ${row.upi}</p>
+                                <p><strong>Amount:</strong> ₹${row.amount}</p>
+                                <button class="btn btn-qr" onclick="showQr('${row.upi}', '${row.amount}')">View QR</button>
+                                <button class="btn btn-accept" onclick="updateStatus('${row.username}', '${row.upi}', '${row.amount}', 'Accept')">Accept</button>
+                                <button class="btn btn-reject" onclick="updateStatus('${row.username}', '${row.upi}', '${row.amount}', 'Reject')">Reject</button>
+                            </div>
+                        `);
+                        container.append(card);
+                    }
+                });
+            });
+    });
+
+    function showQr(upi, amount) {
+        $("#qrcode").empty();
+        new QRCode(document.getElementById("qrcode"), `upi://pay?pa=${upi}&am=${amount}`);
+        $("#qrModal").show();
+    }
+
+    function updateStatus(username, upi, amount, status) {
+        fetch("https://script.google.com/macros/s/AKfycbzYxfwf8ZrdESN2XeP5-S2afxS82DASsaYMkwse7yLjJnN7XguHGg0OoMBQcGWqHI3vbw/exec", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ username, upi, amount, status })
+        }).then(() => {
+            alert(`Request ${status}`);
+            location.reload();
+        });
+    }
+</script>

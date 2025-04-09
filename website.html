@@ -1,0 +1,205 @@
+<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="loader.css">
+  <style>
+    #aboutText, #headerText, #footer, #customerSupport { border-radius: 4px; height: 100px; resize: none; }
+    .form { height: auto; margin: 20px 0; }
+    .preview-image { max-width: 60px; }
+    .screenshot-item, .social-item { display: flex; gap: 10px; align-items: center; justify-content: space-evenly; }
+    .social-item > a { color: #fff; }
+    .delete-btn { background: #ff0000; padding: 4px; width: 50px; text-align: center; border: none; font-family: "Work Sans", serif; cursor: pointer; }
+    #existingData { margin: 0 20px; }
+    .screenshot-item { margin: 10px; padding: 10px; border: 1px solid; }
+</style>
+  <form id="dataForm" class="form">
+    <div class="form-group">
+      <h2>Website</h2>
+      <input type="text" id="appName" name="appName" placeholder="App Name:" class="int" required>
+      <label for="appLogo">App Logo:</label>
+      <input type="file" id="appLogo" name="appLogo" accept="image/*">
+      <img id="logoPreview" class="preview-image">
+      <textarea id="headerText" name="headerText" placeholder="Header Text:" class="int" required></textarea>
+      <label for="headerImage">Header Image:</label>
+      <input type="file" id="headerImage" name="headerImage" accept="image/*">
+      <img id="headerPreview" class="preview-image">
+      <textarea id="aboutText" name="aboutText" placeholder="About Text:" class="int" required></textarea>
+      <label for="screenshot">App Screenshot:</label>
+      <input type="file" id="screenshot" accept="image/*">
+      <button type="button" id="addScreenshot" class="btn">Add Screenshot</button>
+      <div id="screenshotContainer" class="screenshot-container"></div>
+      <textarea id="footer" name="footer" placeholder="Footer:" class="int" required></textarea>
+      <textarea id="customerSupport" name="customerSupport" class="int" placeholder="Customer Support:" required></textarea>
+      <label>Add Social Link:</label>
+      <input type="file" id="socialIcon" accept="image/*">
+      <input type="text" id="socialUrl" placeholder="Enter social media URL" class="int">
+      <button type="button" id="addSocial" class="btn">Add Social Link</button>
+      <div id="socialContainer" class="social-container"></div>
+      <button type="submit" class="btn">Submit</button>
+    </div>
+  </form>
+  <script>
+    let existingData = null;
+    let existingLogoUrl = "";
+    let existingHeaderImageUrl = "";
+    let screenshots = [];
+    let socialLinks = [];
+    const IMGBB_API_KEY = 'bcf98a4f9e50c194d6f0d68ef823aa26';
+    async function fetchExistingData() {
+      try {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbz6_2y-dxw1LIcLgRR_2QNf7rqzeLlD5FxwcUs7mOE8Tk1PEvdIq2O0TsiiL3PaOnjO/exec?action=getData');
+        const data = await response.json();
+        if(data.status === 'success') {
+          existingData = data.data;
+          document.getElementById('appName').value = existingData.appName || "";
+          document.getElementById('headerText').value = existingData.headerText || "";
+          document.getElementById('aboutText').value = existingData.aboutText || "";
+          document.getElementById('footer').value = existingData.footer || "";
+          document.getElementById('customerSupport').value = existingData.customerSupport || "";
+          if(existingData.appLogo) {
+            existingLogoUrl = existingData.appLogo;
+            document.getElementById('logoPreview').src = existingData.appLogo;
+          }
+          if(existingData.headerImage) {
+            existingHeaderImageUrl = existingData.headerImage;
+            document.getElementById('headerPreview').src = existingData.headerImage;
+          }
+          if(existingData.appScreenshots) {
+            screenshots = existingData.appScreenshots.split(',').filter(s => s);
+            updateScreenshotDisplay();
+          }
+          if(existingData.socialIcons && existingData.socialUrls) {
+            let icons = existingData.socialIcons.split(',').filter(s => s);
+            let urls = existingData.socialUrls.split(',').filter(s => s);
+            socialLinks = icons.map((icon, i) => ({ icon: icon, url: urls[i] || "" }));
+            updateSocialDisplay();
+          }
+        }
+      } catch(e) {
+        console.error(e);
+      }
+    }
+    function previewImage(input, previewId) {
+      const preview = document.getElementById(previewId);
+      if(input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = e => preview.src = e.target.result;
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+    document.getElementById('appLogo').addEventListener('change', function() {
+      previewImage(this, 'logoPreview');
+    });
+    document.getElementById('headerImage').addEventListener('change', function() {
+      previewImage(this, 'headerPreview');
+    });
+    async function uploadToImgbb(file) {
+      if(!file) return "";
+      const formData = new FormData();
+      formData.append('image', file);
+      try {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+          method: 'POST',
+          body: formData
+        });
+        const data = await response.json();
+        return data.data.url;
+      } catch(e) {
+        console.error(e);
+        return "";
+      }
+    }
+    document.getElementById('addScreenshot').addEventListener('click', async function() {
+      const file = document.getElementById('screenshot').files[0];
+      if(!file) {
+        alert("Please select an image first");
+        return;
+      }
+      const imageUrl = await uploadToImgbb(file);
+      if(imageUrl) {
+        screenshots.push(imageUrl);
+        updateScreenshotDisplay();
+      }
+      document.getElementById('screenshot').value = "";
+    });
+    document.getElementById('addSocial').addEventListener('click', async function() {
+      const file = document.getElementById('socialIcon').files[0];
+      const url = document.getElementById('socialUrl').value;
+      if(!file || !url) {
+        alert("Please provide both icon and URL");
+        return;
+      }
+      const imageUrl = await uploadToImgbb(file);
+      if(imageUrl) {
+        socialLinks.push({ icon: imageUrl, url: url });
+        updateSocialDisplay();
+      }
+      document.getElementById('socialIcon').value = "";
+      document.getElementById('socialUrl').value = "";
+    });
+    function updateScreenshotDisplay() {
+      const container = document.getElementById('screenshotContainer');
+      container.innerHTML = "";
+      screenshots.forEach((url, index) => {
+        const div = document.createElement('div');
+        div.className = 'screenshot-item';
+        div.innerHTML = `<img src="${url}" class="preview-image"><span class="delete-btn" onclick="deleteScreenshot(${index})">Delete</span>`;
+        container.appendChild(div);
+      });
+    }
+    function updateSocialDisplay() {
+      const container = document.getElementById('socialContainer');
+      container.innerHTML = "";
+      socialLinks.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'social-item';
+        div.innerHTML = `<img src="${item.icon}" class="preview-image"><a href="${item.url}" target="_blank">${item.url}</a><span class="delete-btn" onclick="deleteSocial(${index})">Delete</span>`;
+        container.appendChild(div);
+      });
+    }
+    window.deleteScreenshot = function(index) {
+      screenshots.splice(index, 1);
+      updateScreenshotDisplay();
+    }
+    window.deleteSocial = function(index) {
+      socialLinks.splice(index, 1);
+      updateSocialDisplay();
+    }
+    document.getElementById('dataForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const logoFile = document.getElementById('appLogo').files[0];
+      const logoUrl = logoFile ? await uploadToImgbb(logoFile) : existingLogoUrl;
+      const headerFile = document.getElementById('headerImage').files[0];
+      const headerImageUrl = headerFile ? await uploadToImgbb(headerFile) : existingHeaderImageUrl;
+      const socialIcons = socialLinks.map(item => item.icon).join(',');
+      const socialUrls = socialLinks.map(item => item.url).join(',');
+      const data = {
+        appName: document.getElementById('appName').value,
+        appLogo: logoUrl,
+        headerText: document.getElementById('headerText').value,
+        headerImage: headerImageUrl,
+        aboutText: document.getElementById('aboutText').value,
+        appScreenshots: screenshots.join(','),
+        footer: document.getElementById('footer').value,
+        customerSupport: document.getElementById('customerSupport').value,
+        socialIcons: socialIcons,
+        socialUrls: socialUrls
+      };
+      try {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbz6_2y-dxw1LIcLgRR_2QNf7rqzeLlD5FxwcUs7mOE8Tk1PEvdIq2O0TsiiL3PaOnjO/exec', {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        if(result.status === 'success') {
+          alert("Data saved successfully!");
+          location.reload();
+        } else {
+          throw new Error(result.message);
+        }
+      } catch(e) {
+        alert("Error saving data: " + e.message);
+      }
+    });
+    fetchExistingData();
+  </script>

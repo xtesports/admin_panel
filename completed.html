@@ -1,0 +1,53 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="loader.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+    #loader { display: none; width: 10%; } 
+</style>
+
+<div class="form">
+    <div class="form-group">
+    <h2>Tournament Results</h2>
+    <input type="text" id="username" placeholder="Username: " class="int">
+    <input type="text" id="tournament" placeholder="Tournament Title: " class="int">
+    <input type="number" id="kills" placeholder="Number of Kills: " class="int">
+    <input type="number" id="earning" placeholder="Total Earnings: " class="int">
+    <button onclick="submitData()" class="btn">Submit</button>
+    <div id="loader" class="loader"></div>
+</div>
+</div>
+
+<script>
+    function submitData() {
+        let username = document.getElementById("username").value;
+        let tournament = document.getElementById("tournament").value;
+        let kills = document.getElementById("kills").value;
+        let earning = document.getElementById("earning").value;
+
+        if (!username || !tournament || !kills || !earning) {
+            alert("Please fill all fields");
+            return;
+        }
+
+        $(".loader").show();
+        $("button").prop("disabled", true);
+
+        fetch("https://script.google.com/macros/s/AKfycbxTKgBg-9r4TPiHs6gNoQaaFxRANGK-qF9sFn5M7x7YLoej3wBDSutwhPfpBVghmfLY/exec", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ username, tournament, kills, earning })
+        })
+        .then(response => response.text())
+        .then(() => {
+            alert("Data submitted successfully!");
+            location.reload();
+        })
+        .finally(() => {
+            $(".loader").hide();
+            $("button").prop("disabled", false);
+        });
+    }
+</script>

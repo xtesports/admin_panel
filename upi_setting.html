@@ -1,0 +1,53 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="loader.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+    #loader { display: none; }
+</style>
+
+<div class="form">
+    <div class="form-group">
+    <h2>UPI Settings</h2>
+    <input type="text" id="upiId" placeholder="UPI ID":  required class="int">
+    <input type="text" id="merchantName" placeholder="Merchant Name:" required class="int">
+    <button onclick="submitData()" class="btn">Submit</button>
+    <div id="loader">
+        <div class="loader"></div>
+    </div>
+</div>
+</div>
+<script>
+    function submitData() {
+        let upiId = $("#upiId").val().trim();
+        let merchantName = $("#merchantName").val().trim();
+        
+        if (!upiId || !merchantName) {
+            alert("Please fill in all fields.");
+            return;
+        }
+        
+        $("#loader").show();
+        $("button").prop("disabled", true);
+
+        fetch("https://script.google.com/macros/s/AKfycbxBgEe7B0VP_JrlI2y0lgixePTOJdneWdIAFt9PDW3ejEObKu2dPPY8L7naRQyZONVw/exec", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ upiId, merchantName })
+        })
+        .then(response => response.text())
+        .then(data => {
+            alert("UPI settings updated successfully!");
+            location.reload();
+        })
+        .catch(error => {
+            alert("Error updating UPI settings.");
+        })
+        .finally(() => {
+            $("#loader").hide();
+            $("button").prop("disabled", false);
+        });
+    }
+</script>

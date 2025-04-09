@@ -1,0 +1,48 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="loader.css">
+<style>
+    .header { justify-content: center;}
+</style>
+<div class="header">
+    <h2>Remove Upcoming</h2>
+</div>
+<form id="deleteForm" class="form">
+    <div class="form-group">
+        <h2>Delete Upcoming</h2>
+        <input type="text" id="name" name="name" placeholder="Tournament Name:" class="int" required>
+        <button type="submit" class="btn">Delete</button>
+    </div>
+</form>
+<script>
+document.getElementById('deleteForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('name').value;
+    const confirmDeletion = confirm("Do you really want to delete this registration?");
+    
+    if (confirmDeletion) {
+        const data = { name: name };
+        fetch('https://script.google.com/macros/s/AKfycbwAC6FGof0dRUlQF94Ogn4qmkCz-z0VUWahV0HgY-e_BQTh6rKDzMb_hceuUW-Io0zE/exec', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(responseData => {
+            if (responseData.result === 'deleted') {
+                alert('Registration deleted successfully!');
+            } else if (responseData.result === 'not_found') {
+                alert('No registration found with that name.');
+            } else {
+                alert('Error occurred while deleting.');
+            }
+        })
+        .catch(error => {
+            alert('Error communicating with the server.');
+        });
+    } else {
+        alert('Deletion canceled.');
+    }
+});
+</script>

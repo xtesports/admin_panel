@@ -1,0 +1,71 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="loader.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<style>
+    #loader { display: none; }
+    .header { justify-content: center;}
+    .btn-bhai { display: flex; align-items: center; justify-content: space-evenly;}
+    .accept { background: #008000;}
+    .reject { background: #ff0000;}
+    .accept , .reject { padding: 6px; border: none; border-radius: 125px; width: 120px; color: #fff; font-weight: 500;}
+    .card { display: flex; flex-direction: column; gap: 10px; margin: 20px 20px 0px 20px; border-radius: 12px; padding: 20px; background: #022952;}
+</style>
+<div id="loader"><div class="loader"></div></div>
+<div class="header">
+    <h2>Add Coins</h2>
+</div>
+<div class="container">
+    <div id="transactions"></div>
+</div>
+<script>
+    $(document).ready(function() {
+        fetch("https://script.google.com/macros/s/AKfycbwXQ5rSC284-yh8UXL4D9C9TO17pxwjSS56VJ26YoHTxXk3EblRn-yw5wVYUB5ESE8/exec?getData=true")
+            .then(response => response.json())
+            .then(data => {
+                if (data.length === 0) {
+                    $("#transactions").html("<p>No pending transactions.</p>");
+                    return;
+                }
+                
+                data.forEach(item => {
+                    $("#transactions").append(`
+                        <div class="card">
+                            <h3>Username: ${item.username}</h3>
+                            <p><strong>Amount:</strong> ${item.amount} coins</p>
+                            <p><strong>UPI ID:</strong> ${item.upi}</p>
+                            <p><strong>Method:</strong> ${item.method}</p>
+                            <p><strong>Transaction ID:</strong> ${item.transactionId}</p>
+                            <img src="${item.screenshot}" alt="Screenshot" width="30%" style="border-radius: 5px; margin-top: 10px;">
+                            <div class="btn-bhai">
+                            <button class="accept" onclick="updateTransaction('${item.username}', '${item.amount}', 'Accept')">Accept</button>
+                            <button class="reject" onclick="updateTransaction('${item.username}', '${item.amount}', 'Reject')">Reject</button>
+                            </div>
+                        </div>
+                    `);
+                });
+            });
+    });
+
+    function updateTransaction(username, amount, status) {
+        $(".loader").show();
+        $("button").prop("disabled", true);
+
+        fetch("https://script.google.com/macros/s/AKfycbwXQ5rSC284-yh8UXL4D9C9TO17pxwjSS56VJ26YoHTxXk3EblRn-yw5wVYUB5ESE8/exec", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ username, amount, status })
+        })
+        .then(response => response.text())
+        .then(() => {
+            alert(`Transaction ${status} successfully!`);
+            location.reload();
+        })
+        .finally(() => {
+            $(".loader").hide();
+            $("button").prop("disabled", false);
+        });
+    }
+</script>
